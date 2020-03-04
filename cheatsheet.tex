@@ -1,0 +1,164 @@
+\documentclass[11pt]{amsart}
+\usepackage{geometry}                % See geometry.pdf to learn the layout options. There are lots.
+\geometry{letterpaper}                   % ... or a4paper or a5paper or ... 
+%\geometry{landscape}                % Activate for for rotated page geometry
+%\usepackage[parfill]{parskip}    % Activate to begin paragraphs with an empty line rather than an indent
+\usepackage{graphicx}
+\usepackage{amssymb}
+\usepackage{epstopdf}
+\DeclareGraphicsRule{.tif}{png}{.png}{`convert #1 `dirname #1`/`basename #1 .tif`.png}
+
+\title{Category cheat sheet for Haskellers}
+\author{Mark Hopkins}
+%\date{}                                           % Activate to display a given date or no date
+\DeclareMathOperator{\End}{End}
+\DeclareMathOperator{\Coend}{Coend}
+\DeclareMathOperator{\Hom}{Hom}
+
+\newcommand{\myvec}[1]{\vec{#1}}
+\newcommand{\cat}[1]{\mathbf{#1}}
+\newcommand{\op}[1]{#1^{\text{op}}}
+
+\newcommand{\blank}{{-}}
+
+%\def\cat{Cat}
+\begin{document}
+%\newcommand{cat}[1]{\boldmath{#1}}
+    \maketitle
+
+    \subsection*{Products}
+
+    $\cat{C}$ has products if
+    $
+    \cat{C}(C, A \times B) \cong \cat{C}(C, A) \times \cat{C}(C, B)
+    $
+
+    \subsection*{Coproducts}
+
+    $\cat{C}$ has coproducts or sums if
+    $
+    \cat{C}(A + B, C) \cong \cat{C}(A,C) \times \cat{C}(B,C)
+    $
+
+    \subsection*{Quotient}
+    A quotient of a set is a way of identifying elements.
+
+    \subsection*{Enriched categories}
+    This means doing category theory with a category $\mathcal V$ in place of $\cat{Set}$.
+    This means there is a $\mathcal V$-object of object of objects and hom-objects instead of hom-sets.
+
+    $\mathcal V$ should be a complete, cocomplete, biclosed monoidal category.
+%\section{}
+%\subsection{}
+
+    \subsection*{Complete category}
+    A category is complete if it has all limits.
+
+    \subsection*{Cocomplete category}
+    A category is cocomplete if it has all colimits.
+
+    \subsection*{Profunctor}
+    A profunctor on $\cat C$ is a functor $\op{\cat C} \times {\cat c} \to \cat(Set)$
+
+    \subsection*{Ends}
+    If $F:\op{\cat C} \times \cat C \to \cat D$
+    then we can form the ``diagonal'' product $\prod_{c\in\cat C} F(c,c)$ in $\cat D$.
+
+    Given a morphism $f: c \to c'$ in $\cat C$, there are two ways we can apply it to factors in this product:
+    we can apply it covariantly
+
+    \[
+        F(c, f): F(c,c) \to F(c', c')
+    \]
+
+    or contravariantly
+
+    \[
+        F(f, c'): F(c',c') \to F(c', c').
+    \]
+
+    $\End F = \int_{\cat C} F = \int_{c\in\cat C} F(c,c)$
+    is the subobject for which these give the same answer for all $f$.
+
+    It comes with projection morphisms
+    $\int_{c\in\cat C} F(c,c) \to F(c, c)$ for every $c\in \cat{C}$
+    satisfying a universal property.
+
+    The universal quantifier lets us approximate the end of a profunctor in Haskell.
+
+    \begin{verbatim}
+        data End f = End (forall c. f c c)
+
+        proj :: End f -> f c c
+        proj (End fcc) = fcc
+    \end{verbatim}
+
+    \subsection*{Coends}
+    If $F:\cat C^{\text{op}} \times \cat C \to \cat D$
+    then we can form the ``diagonal'' sum $\sum_{c\in\cat C} F(c,c)$ in $\cat D$.
+
+    Given a morphism $f: c \to c'$ in $\cat C$, there are two ways we can apply it to terms in this sum:
+    we can apply it covariantly
+
+    \[
+        F(1_c, f): F(c,c) \to F(c', c')
+    \]
+
+    or contravariantly
+
+    \[
+        F(f, 1_{c'}): F(c',c') \to F(c', c').
+    \]
+
+    $\Coend F = \int^{\cat C} F = \int^{c\in\cat C} F(c,c)$
+    is the quotient of the sum which identifies the two answers for all $f$.
+
+    It comes with injection morphisms
+    $F(c, c) \to \int^{c\in\cat C} F(c,c)$ for every $c\in \cat{C}$
+    satisfying a universal property.
+
+    The existential quantifier lets us approximate the coend of a profunctor in Haskell.
+
+    \begin{verbatim}
+        data Coend f = forall c. Coend (f c c)
+
+        inj :: f c c -> Coend c
+        inj fcc = Coend fcc
+    \end{verbatim}
+
+    \subsection*{Presheaf}
+    A presheaf on $\cat C$ is a functor $\op{\cat C} -> \cat{Set}$.
+
+    \subsection*{Representable functor}
+    A covariant representable functor is one isomorphic to $\cat{C}(c, \blank)$.
+
+    In Haskell this means a datatype defined using only products (no sums).
+    For instance
+
+    \begin{verbatim}
+        data Pair a = Pair a a deriving (Eq, Show, Functor)
+    \end{verbatim}
+
+    \verb|Pair a| is isomorphic to \verb|Bool -> a|, so it's representable, and represented by \verb|Bool|.
+
+    You can think of it as an indexable data structure, with $c$ playing the role of the index.
+    We also call this the reader monad.
+
+    A contravariant representable functor is one isomorphic to $\cat{C}(\blank, c)$.
+    It's an example of a presheaf
+
+    \subsection*{Yoneda lemma}
+    The Yoneda lemma says that natural transformations \textit{out of} a representable functor (covariant or
+    contravariant)
+    are tightly controlled.
+
+    \[
+        [\op{\cat{C}}, \cat{Set}]\left(\cat{C}(c, \blank), G\right) \cong G(c)
+    \]
+
+    In words, if $F$ and $G$ are presheaves on $\cat C$, and $F$ is represented by $c$, then the natural transformations
+    from $F$ to $G$ line up one-to-one with the elements of the set $G(c)$.
+    \subsection*{Kan extensions}
+    \subsection*{}
+
+\end{document}  
